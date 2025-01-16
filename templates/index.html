@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Light Control</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Room Light Control</h1>
+        <p id="light-status">Light is currently <span>off</span></p>
+        <button id="toggle-button">Toggle Light</button>
+    </div>
+    <script>
+        // Get references to elements
+        const lightStatus = document.getElementById('light-status');
+        const toggleButton = document.getElementById('toggle-button');
+
+        // Function to update light status
+        async function updateLightStatus() {
+            const response = await fetch('/light-status');
+            const data = await response.json();
+            lightStatus.querySelector('span').textContent = data.state;
+        }
+
+        // Function to toggle light
+        toggleButton.addEventListener('click', async () => {
+            const response = await fetch('/toggle-light', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            lightStatus.querySelector('span').textContent = data.state;
+        });
+
+        // Update status on page load
+        updateLightStatus();
+    </script>
+</body>
+</html>
