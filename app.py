@@ -2,14 +2,15 @@ from flask import Flask, request, jsonify, render_template
 from sqlalchemy import create_engine, text
 from datetime import datetime
 import os
+import psycopg2
 
+def get_db_connection():
+    conn = psycopg2.connect(host=os.getenv('POSTGRES_HOST', 'lc_history_postgres'),
+                            database=os.environ['POSTGRES_DB'],
+                            user=os.environ['POSTGRES_USER'],
+                            password=os.environ['POSTGRES_PASSWORD'])
+    return conn
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/toggle_history"
-)
-
-engine = create_engine(DATABASE_URL)
 app = Flask(__name__)
 
 # Light status
@@ -28,9 +29,16 @@ def toggle_light():
     light_status["state"] = new_state
 
     # Insert the toggle action into the database
-    with engine.connect() as connection:
-        query = text('INSERT INTO toggle_actions (action, timestamp) VALUES (:action, :timestamp)')
-        connection.execute(query, {'action': new_state, 'timestamp': datetime.utcnow()})
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                'INSERT INTO toggle_actions (action, timestamp) VALUES (%s, %s)',
+                (new_state, datetime.utcnow())
+            )
+        conn.commit()
+    finally:
+        conn.close()
 
     return jsonify({"message": f"Light is turned {new_state}", "state": new_state}), 200
 
