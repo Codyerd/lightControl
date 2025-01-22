@@ -11,17 +11,27 @@
         <h1>Room Light Control</h1>
         <p id="light-status">Light is currently <span>off</span></p>
         <button id="toggle-button">Toggle Light</button>
+        <br>
+        <br>
+        <!-- Lamp -->
+        <div id="lamp-container">
+            <div id="lamp"></div>
+            <div id="lamp-light"></div>
+        </div>
     </div>
     <script>
         // Get references to elements
         const lightStatus = document.getElementById('light-status');
         const toggleButton = document.getElementById('toggle-button');
+        const lamp = document.getElementById('lamp');
+        const lampLight = document.getElementById('lamp-light');
 
         // Function to update light status
         async function updateLightStatus() {
             const response = await fetch('/light-status');
             const data = await response.json();
             lightStatus.querySelector('span').textContent = data.state;
+            updateLamp(data.state);
         }
 
         // Function to toggle light
@@ -32,7 +42,19 @@
             });
             const data = await response.json();
             lightStatus.querySelector('span').textContent = data.state;
+            updateLamp(data.state);
         });
+
+        // Function to update lamp appearance
+        function updateLamp(state) {
+            if (state === "on") {
+                lamp.style.backgroundColor = "#ffeb3b";
+                lampLight.style.display = "block";
+            } else {
+                lamp.style.backgroundColor = "#444";
+                lampLight.style.display = "none";
+            }
+        }
 
         // Update status on page load
         updateLightStatus();
