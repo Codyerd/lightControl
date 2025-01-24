@@ -6,8 +6,14 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    height: 200vh;
     color: #333;
+    flex-direction: column; /* Stack elements vertically */
+}
+
+html, body {
+    height: auto; /* Allow content to determine height */
+    overflow-y: auto; /* Enable vertical scrolling when necessary */
 }
 
 .container {
@@ -16,6 +22,17 @@ body {
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 30%; /* Optional: Control the width of the container */
+}
+
+/* Add vertical spacing between sections */
+.light-control-container {
+    margin-bottom: 40px; /* Space between toggle and comments section */
+}
+
+.comments-section-container {
+    width: 50%;
+    margin-top: 20px;
 }
 
 h1 {
@@ -72,4 +89,55 @@ button:hover {
     transform: translate(-50%, -50%);
     border-radius: 50%;
     display: none;
+}
+
+.comments-section h2 {
+    margin-bottom: 10px;
+}
+
+#comment-form {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+}
+
+#comment-input {
+    resize: none;
+    height: 80px;
+    margin-bottom: 10px;
+    padding: 10px;
+    font-size: 14px;
+}
+
+#comments-list {
+    list-style: none;
+    padding: 0;
+}
+
+#comments-list li {
+    background: #f4f4f4;
+    margin-bottom: 5px;
+    padding: 2px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    position: relative;
+}
+
+li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.comment-text {
+    flex: 1; /* Take up available space */
+}
+
+.timestamp {
+    color: gray;
+    font-size: 12px;
+    margin-left: 10px;
+    white-space: nowrap; /* Prevent wrapping */
 }

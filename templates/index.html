@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
+    <div class="light-control-container container">
         <h1>Room Light Control</h1>
         <p id="light-status">Light is currently <span>off</span></p>
         <button id="toggle-button">Toggle Light</button>
@@ -18,13 +18,65 @@
             <div id="lamp"></div>
             <div id="lamp-light"></div>
         </div>
+        <p style="display: inline;">
+            <button><a href="{{ url_for('show_history') }}"><strong>History</strong></a></button>
+        </p>
     </div>
+    
+    <div class="comments-section-container container">
+        <div class="comments-section">
+            <h2>Comments</h2>
+            <ul id="comments-list"></ul>
+            <form id="comment-form">
+                <textarea id="comment-input" placeholder="Leave a comment..." required></textarea>
+                <button type="submit">Post Comment</button>
+            </form>
+        </div>
+    </div>
+    
     <script>
         // Get references to elements
         const lightStatus = document.getElementById('light-status');
         const toggleButton = document.getElementById('toggle-button');
         const lamp = document.getElementById('lamp');
         const lampLight = document.getElementById('lamp-light');
+        const commentsList = document.getElementById('comments-list');
+        const commentForm = document.getElementById('comment-form');
+        const commentInput = document.getElementById('comment-input');
+    
+        // Fetch and display comments
+        async function fetchComments() {
+            const response = await fetch('/comments');
+            const comments = await response.json();
+            console.log(comments)
+            commentsList.innerHTML = ''; // Clear the list
+            comments.forEach(comment => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span class="comment-text">${comment.comment}</span>
+                    <span class="timestamp">${comment.timestamp}</span>
+                `;
+                commentsList.appendChild(li);
+            });
+        }
+    
+        // Add a new comment
+        commentForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const comment = commentInput.value;
+            const response = await fetch('/comments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ comment })
+            });
+            if (response.ok) {
+                commentInput.value = '';
+                fetchComments();
+            } else {
+                alert('Failed to add comment');
+            }
+        });
+
 
         // Function to update light status
         async function updateLightStatus() {
@@ -56,8 +108,8 @@
             }
         }
 
-        // Update status on page load
         updateLightStatus();
+        fetchComments();
     </script>
 </body>
 </html>

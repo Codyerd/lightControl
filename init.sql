@@ -15,3 +15,10 @@ CREATE TABLE IF NOT EXISTS toggle_actions (
     action VARCHAR(10) NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE comments IF NOT EXISTS toggle_actions (
+    id SERIAL PRIMARY KEY,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    comment TEXT NOT NULL,
+    ip_address VARCHAR(45)
+);
