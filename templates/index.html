@@ -56,6 +56,15 @@
                     <span class="comment-text">${comment.comment}</span>
                     <span class="timestamp">${comment.timestamp}</span>
                 `;
+                // Add delete button to the comment if condition holds
+                if (comment.delete === 1) {
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Delete';
+                    deleteBtn.className = 'delete-comment-btn';
+                    deleteBtn.dataset.commentId = comment.id;
+                    deleteBtn.onclick = () => delete_comment(comment.id);
+                    li.appendChild(deleteBtn);
+                }
                 commentsList.appendChild(li);
             });
         }
@@ -76,6 +85,21 @@
                 alert('Failed to add comment');
             }
         });
+
+        document.addEventListener('click', async (event) => {
+            if (event.target.matches('.delete-comment-btn')) {
+                const commentId = event.target.dataset.commentId;
+        
+                const response = await fetch(`/comments/${commentId}`, { method: 'DELETE' });
+        
+                if (response.ok) {
+                    event.target.closest('li').remove(); // Remove the comment from the UI
+                } else {
+                    alert('Failed to delete comment');
+                }
+            }
+        });
+        
 
 
         // Function to update light status

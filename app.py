@@ -57,7 +57,13 @@ def show_history():
     try:
         with conn.cursor() as cur:
             cur.execute('SELECT * FROM toggle_actions;')
-            history = cur.fetchall()
+            history = [
+                {
+                    "timestamp": row[2].strftime('%Y-%m-%d %H:%M:%S'),
+                    "act": row[1],
+                }
+                for row in cur.fetchall()
+            ]
         conn.commit()
     except Exception as e:
         print(f"An error occurred when fetching toggle history: {e}")
@@ -97,18 +103,19 @@ def add_comment():
 def get_comment():
     """Get all comments from database."""
     conn = get_db_connection()
+    user_ip = str(request.remote_addr).strip()
     try:
         with conn.cursor() as cur:
-            cur.execute('SELECT id, comment, timestamp FROM comments ORDER BY timestamp DESC;')
+            cur.execute('SELECT id, comment, timestamp, ip_address FROM comments ORDER BY timestamp DESC;')
             comments = [
                 {
                     "id": row[0],
                     "comment": row[1],
-                    "timestamp": row[2].strftime('%Y-%m-%d %H:%M')
+                    "timestamp": row[2].strftime('%Y-%m-%d %H:%M'),
+                    "delete": 1 if row[3] == user_ip.strip() else 0
                 }
                 for row in cur.fetchall()
             ]
-        conn.commit()
     except Exception as e:
         print(f"An error occurred when fetching comments: {e}")
         comments = []
@@ -118,6 +125,23 @@ def get_comment():
     return jsonify(comments), 200
 
 
+@app.route('/comments/<int:comment_id>', methods=['DELETE'])
+def delete_comment(comment_id):
+    """Delete an existing comment by id."""
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                'DELETE FROM comments WHERE id = %s;',
+                (comment_id,)
+            )
+            conn.commit()
+        return jsonify({"message": "Comment deleted successfully"}), 200
+    except Exception as e:
+        print(f"Error deleting comment: {e}")
+        return jsonify({"error": "Failed to delete comment"}), 500
+    finally:
+        conn.close()
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
