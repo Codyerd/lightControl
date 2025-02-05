@@ -1,8 +1,17 @@
 from flask import Flask, request, jsonify, render_template
-from sqlalchemy import create_engine, text
+from flask_socketio import SocketIO, emit
 from datetime import datetime
 import os
 import psycopg2
+
+
+app = Flask(__name__)
+socketio = SocketIO(app)
+
+# Light status
+light_status = {"state": "off"}  # Default state
+
+connected_clients = {}  # Stores active ESP32 relay connections
 
 def get_db_connection():
     conn = psycopg2.connect(host=os.getenv('POSTGRES_HOST', 'lc_history_postgres'),
@@ -11,10 +20,17 @@ def get_db_connection():
                             password=os.environ['POSTGRES_PASSWORD'])
     return conn
 
-app = Flask(__name__)
-
-# Light status
-light_status = {"state": "off"}  # Default state
+@socketio.on('register')
+def register_device(data):
+    """ESP32 relay-switch registers itself with the server"""
+    device_id = data.get("device_id")
+    print("Received register request!")
+    if device_id:
+        connected_clients[device_id] = request.sid  # Store session ID
+        print(f"Successfully registered {device_id}!")
+        emit("registration_success", {"message": "Registered successfully", "device_id": device_id}, room=request.sid)
+    else:
+        emit("registration_error", {"error": "Invalid device_id"})
 
 @app.route('/')
 def home():
@@ -46,6 +62,12 @@ def toggle_light():
         conn.commit()
     finally:
         conn.close()
+    # Send WebSocket message only to the ESP32 relay-switch
+    if "esp32_switch" in connected_clients:
+        socketio.emit("light_status", {"state": new_state}, room=connected_clients["esp32_switch"])
+        print(f"message: Light is turned {new_state}")
+    else:
+        print("error: ESP32 switch not connected")
 
     return jsonify({"message": f"Light is turned {new_state}", "state": new_state}), 200
 
@@ -144,4 +166,5 @@ def delete_comment(comment_id):
         conn.close()
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    # app.run(host='0.0.0.0', port=5000)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
