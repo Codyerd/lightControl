@@ -1,12 +1,16 @@
 from flask import Flask, request, jsonify, render_template
 from flask_socketio import SocketIO, emit
+from flask_cors import CORS
 from datetime import datetime
 import os
 import psycopg2
+import logging
 
 
 app = Flask(__name__)
-socketio = SocketIO(app)
+CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*", logger=True, engineio_logger=True)
+
 
 # Light status
 light_status = {"state": "off"}  # Default state
@@ -21,16 +25,13 @@ def get_db_connection():
     return conn
 
 @socketio.on('register')
-def register_device(data):
+def register_device(device_id):
     """ESP32 relay-switch registers itself with the server"""
-    device_id = data.get("device_id")
     print("Received register request!")
     if device_id:
         connected_clients[device_id] = request.sid  # Store session ID
         print(f"Successfully registered {device_id}!")
         emit("registration_success", {"message": "Registered successfully", "device_id": device_id}, room=request.sid)
-    else:
-        emit("registration_error", {"error": "Invalid device_id"})
 
 @app.route('/')
 def home():
@@ -63,11 +64,11 @@ def toggle_light():
     finally:
         conn.close()
     # Send WebSocket message only to the ESP32 relay-switch
-    if "esp32_switch" in connected_clients:
-        socketio.emit("light_status", {"state": new_state}, room=connected_clients["esp32_switch"])
+    # if "esp32_switch" in connected_clients:
+        socketio.emit("light_status", {"state": new_state})
         print(f"message: Light is turned {new_state}")
-    else:
-        print("error: ESP32 switch not connected")
+    # else:
+    #   print("error: ESP32 switch not connected")
 
     return jsonify({"message": f"Light is turned {new_state}", "state": new_state}), 200
 
@@ -167,4 +168,4 @@ def delete_comment(comment_id):
 
 if __name__ == "__main__":
     # app.run(host='0.0.0.0', port=5000)
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
