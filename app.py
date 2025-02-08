@@ -6,11 +6,9 @@ import os
 import psycopg2
 import logging
 
-
 app = Flask(__name__)
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*", logger=True, engineio_logger=True)
-
+socketio = SocketIO(app, cors_allowed_origins="*", logger=True)
 
 # Light status
 light_status = {"state": "off"}  # Default state
@@ -24,14 +22,19 @@ def get_db_connection():
                             password=os.environ['POSTGRES_PASSWORD'])
     return conn
 
+@socketio.on('*')
+def catch_all(event, data):
+    app.logger.info(event)
+    app.logger.info(data)
+
 @socketio.on('register')
 def register_device(device_id):
     """ESP32 relay-switch registers itself with the server"""
-    print("Received register request!")
+    app.logger.info("Received register request!")
     if device_id:
         connected_clients[device_id] = request.sid  # Store session ID
-        print(f"Successfully registered {device_id}!")
-        emit("registration_success", {"message": "Registered successfully", "device_id": device_id}, room=request.sid)
+        app.logger.info(f"Successfully registered {device_id}!")
+        # emit("registration_success", {"message": "Registered successfully", "device_id": device_id}, room=request.sid)
 
 @app.route('/')
 def home():
@@ -64,11 +67,11 @@ def toggle_light():
     finally:
         conn.close()
     # Send WebSocket message only to the ESP32 relay-switch
-    # if "esp32_switch" in connected_clients:
-        socketio.emit("light_status", {"state": new_state})
-        print(f"message: Light is turned {new_state}")
-    # else:
-    #   print("error: ESP32 switch not connected")
+    if "esp32_switch" in connected_clients:
+        socketio.emit("light_status", {"state": new_state}, to=connected_clients["esp32_switch"])
+        app.logger.info(f"message: Light is turned {new_state}")
+    else:
+        app.logger.warning("error: ESP32 switch not connected")
 
     return jsonify({"message": f"Light is turned {new_state}", "state": new_state}), 200
 
