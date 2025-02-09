@@ -13,7 +13,7 @@ socketio = SocketIO(app, cors_allowed_origins="*", logger=True)
 # Light status
 light_status = {"state": "off"}  # Default state
 
-connected_clients = {}  # Stores active ESP32 relay connections
+connected_clients = {}
 
 def get_db_connection():
     conn = psycopg2.connect(host=os.getenv('POSTGRES_HOST', 'lc_history_postgres'),
@@ -34,7 +34,9 @@ def register_device(device_id):
     if device_id:
         connected_clients[device_id] = request.sid  # Store session ID
         app.logger.info(f"Successfully registered {device_id}!")
-        # emit("registration_success", {"message": "Registered successfully", "device_id": device_id}, room=request.sid)
+    else:
+        app.logger.warning(f"Registeration failed for {device_id}")
+
 
 @app.route('/')
 def home():
@@ -69,9 +71,9 @@ def toggle_light():
     # Send WebSocket message only to the ESP32 relay-switch
     if "esp32_switch" in connected_clients:
         socketio.emit("light_status", {"state": new_state}, to=connected_clients["esp32_switch"])
-        app.logger.info(f"message: Light is turned {new_state}")
+        app.logger.info(f"Light is turned {new_state}")
     else:
-        app.logger.warning("error: ESP32 switch not connected")
+        app.logger.warning("ESP32 switch not connected")
 
     return jsonify({"message": f"Light is turned {new_state}", "state": new_state}), 200
 

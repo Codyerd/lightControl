@@ -1,3 +1,6 @@
+// Required Arduino library: ArduinoJson, Websokcets, ArduinoWebsockets
+// Simulation: https://wokwi.com/projects/422240651036554241
+
 #include <Arduino.h>
 
 #include <WiFi.h>
