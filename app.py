@@ -11,8 +11,23 @@ CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", logger=True)
 
 # Light status
-light_status = {"state": "off"}  # Default state
+# light_status = {"state": "off"}  # Default state
+def get_status_helper():
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                'SELECT action FROM toggle_actions ORDER BY timestamp DESC LIMIT 1'
+            )
+            result = cursor.fetchone()
+        return result[0] if result else "off"
+    except Exception as e:
+        app.logger.error(f"Error fetching light status: {e}")
+        return "off"
+    finally:
+        conn.close()
 
+# TODO: Fetch the list from database in the future
 connected_clients = {}
 
 def get_db_connection():
@@ -47,15 +62,15 @@ def home():
 @app.route('/light-status', methods=['GET'])
 def get_light_status():
     """Get the current status of the light."""
-    return jsonify({"state": light_status["state"]}), 200
+    status = get_status_helper()
+    return jsonify({"state": status}), 200
 
 
 @app.route('/toggle-light', methods=['POST'])
 def toggle_light():
     """Toggle the light and record the action in the database."""
-    current_state = light_status["state"]
+    current_state = get_status_helper()
     new_state = "on" if current_state == "off" else "off"
-    light_status["state"] = new_state
 
     # Insert the toggle action into the database
     conn = get_db_connection()
